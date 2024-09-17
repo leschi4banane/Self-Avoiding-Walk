@@ -98,10 +98,9 @@ if __name__ == '__main__':
 
     for val in return_dict.values():
         found.update(val)
-
-    for val in return_dict.values():
-        for solution in val:
-            found.add(tuple([(y, x) for x, y in solution]))
+    
+    for solution in set(found):
+        found.add(tuple([(y, x) for x, y in solution]))
 
     for solution in set(found):
         found.add(tuple([(SIZE - x - 1, y) for x, y in solution]))
