@@ -91,11 +91,6 @@ if __name__ == '__main__':
             p.start()
             processes.append(p)
     
-    middle_x, middle_y = math.ceil(SIZE/2)-1, math.ceil(SIZE/2)-1
-    p = multiprocessing.Process(target=process_start_point, args=((middle_x,middle_y), return_dict))
-    p.start()
-    processes.append(p)
-    
     print(f"Started {len(processes)} processes on {multiprocessing.cpu_count()} cores")
 
     for p in processes:
