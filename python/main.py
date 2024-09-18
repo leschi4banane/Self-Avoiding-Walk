@@ -12,7 +12,7 @@ class Walker:
     def __init__(self, size: int, start: tuple) -> None:
         self.size = size
 
-        self.neighbors = self.preCalcNeighbors()
+        self.neighbors = self.pre_calc_neighbors()
 
         self.path = [start]
         self.path_set = set(self.path)
@@ -21,17 +21,17 @@ class Walker:
 
         self.found = set()
 
-    def getNeighbors(self, cords) -> list:
+    def get_neighbors(self, cords) -> list:
         x, y = cords
         size = self.size
         possible = ((x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y))
         return [pair for pair in possible if 0 <= pair[0] < size and 0 <= pair[1] < size]
 
-    def preCalcNeighbors(self) -> dict:
+    def pre_calc_neighbors(self) -> dict:
         neighbor_dict = {}
         for x in range(self.size):
             for y in range(self.size):
-                neighbor_dict[(x, y)] = self.getNeighbors((x, y))
+                neighbor_dict[(x, y)] = self.get_neighbors((x, y))
         return neighbor_dict
 
     def choose_neighbor(self, cords) -> tuple:
