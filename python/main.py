@@ -2,36 +2,40 @@ import os
 import sys
 import math
 import time
-import multiprocessing
+from multiprocessing import Pool, cpu_count
 
 SIZE: int = int(sys.argv[1])
 
-found: set = set()
-
 class Walker:
-    def __init__(self, size: int, start: tuple) -> None:
+    def __init__(self, size: int, start: tuple, path = []) -> None:
         self.size = size
 
-        self.neighbors = self.pre_calc_neighbors()
+        self.neighbors = self.preCalcNeighbors()
 
-        self.path = [start]
+        if not path:
+            self.path = [start]
+        else:
+            self.path = path
         self.path_set = set(self.path)
-
+        
         self.possibilities = []
 
         self.found = set()
+        
+    def split(self) -> list:
+        return [Walker(self.size, None, [self.path[-1], possibility]) for possibility in self.neighbors[self.path[-1]]]
 
-    def get_neighbors(self, cords) -> list:
+    def getNeighbors(self, cords) -> list:
         x, y = cords
         size = self.size
         possible = ((x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y))
         return [pair for pair in possible if 0 <= pair[0] < size and 0 <= pair[1] < size]
 
-    def pre_calc_neighbors(self) -> dict:
+    def preCalcNeighbors(self) -> dict:
         neighbor_dict = {}
         for x in range(self.size):
             for y in range(self.size):
-                neighbor_dict[(x, y)] = self.get_neighbors((x, y))
+                neighbor_dict[(x, y)] = self.getNeighbors((x, y))
         return neighbor_dict
 
     def choose_neighbor(self, cords) -> tuple:
@@ -47,8 +51,7 @@ class Walker:
         
         return neighbor_options[0], neighbor_options[1:]
 
-    
-    def generate(self) -> int:
+    def generate(self) -> set:
         end_len = self.size * self.size
         while True:
             neighbors = self.choose_neighbor(self.path[-1])
@@ -61,7 +64,7 @@ class Walker:
                     self.possibilities.pop()
 
                 if not self.possibilities:
-                    print(f"{self.path[0]} done")
+                    print(".", end="", flush=True)
                     return self.found
                 
                 new = self.possibilities[-1].pop()
@@ -73,32 +76,43 @@ class Walker:
             self.path.append(new)
             self.possibilities.append(other)
 
-def process_start_point(start_point, shared_dict):
-    shared_dict[start_point] = Walker(SIZE, start_point).generate()
+def split_processes(points):
+    walkers = [Walker(SIZE, start_point) for start_point in points]
+    
+    new = []
+    for walker in walkers:
+        new.extend(walker.split())
+        
+    return new
+
+def start_walker(walker):
+    return  walker.generate()
+    
+def multicore_calc(points):
+    
+    with Pool(processes=cpu_count()) as pool:
+        results = pool.map(start_walker, points)
+        pool.close()
+        pool.join()
+    return results
 
 if __name__ == '__main__':
     start = time.time()
 
-    processes = []
-    manager = multiprocessing.Manager()
-    return_dict = manager.dict()
+    start_points = []
 
     for x in range(math.ceil(SIZE/2)):
         for y in range(x + 1):
             if (x+y) % 2 == 1 and SIZE % 2 == 1:
                 continue
-            p = multiprocessing.Process(target=process_start_point, args=((x,y), return_dict))
-            p.start()
-            processes.append(p)
+            start_points.append((x, y))
     
-    print(f"Started {len(processes)} processes on {multiprocessing.cpu_count()} cores")
-
-    for p in processes:
-        p.join()
-
-    for val in return_dict.values():
-        found.update(val)
+    split_walkers = split_processes(start_points)
     
+    print(f"Calculating {len(start_points)} starting points as {len(split_walkers)} split walkers on {cpu_count()} cores")
+    found = set().union(*multicore_calc(split_walkers))
+    print()
+
     for solution in set(found):
         found.add(tuple([(y, x) for x, y in solution]))
 
